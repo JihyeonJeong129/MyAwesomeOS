@@ -77,11 +77,11 @@ RESETDISK:
     ;;;;;;;;;;;;;;;;;;;;;;;;; 
     mov si, 0x1000
     mov es, si
-    mov bs, 0x0000
+    mov bx, 0x0000
 
     mov di, word[TOTALSECTORCOUNT]
 
-READDATE:
+READDATA:
     cmp di, 0
     je READEND
     sub di, 0x1
@@ -94,7 +94,7 @@ READDATE:
     mov ch, byte[TRACKNUMBER]
     mov cl, byte[SECTORNUMBER]
     mov dh, byte[HEADNUMBER]
-    mod dl, 0x00
+    mov dl, 0x00
     int 0x13
     jc HANDLEDISKERROR
 
