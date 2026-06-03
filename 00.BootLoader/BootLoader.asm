@@ -176,7 +176,7 @@ PRINTMESSAGE:
     mov si, word[bp + 8]
 
 .MESSAGELOOP:
-    mov cl, byte[MESSAGE1 + si]
+    mov cl, byte[si]
 
     cmp cl, 0
     je .MESSAGEEND
