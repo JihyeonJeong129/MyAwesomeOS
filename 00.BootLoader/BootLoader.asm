@@ -10,16 +10,25 @@ jmp 0x07C0:START
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 TOTALSECTORCOUNT:   dw  1024
-SECTORNUMBER:   db  0x02
-HEADNUMBER:     db  0x00
-TRACKNUMBER:    db  0x00
+
 
 START:
     mov ax, 0x07C0
     mov ds, ax
     mov ax, 0xB800
     mov es, ax
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Stack Init
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ax, 0x0000
+    mov ss, ax
+    mov sp, 0xFFFE
+    mov bp, 0xFFFE
     
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Stack Init
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
     mov si, 0
 
 .SCREENCLEARLOOP:
@@ -32,8 +41,139 @@ START:
 
     jb .SCREENCLEARLOOP
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Print init start message
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    push MESSAGE1
+    push 0 ; Y cordinate
+    push 0 ; X cordinate
+    call PRINTMESSAGE
+    add sp, 6
+
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Print OS Image Loading message
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    push IMAGELOADINGMESSAGE
+    push 1 ; Y cordinate
+    push 0 ; X cordinate
+    call PRINTMESSAGE
+    add sp, 6
+
     mov si, 0
     mov di, 0
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Disk Image Loading
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+RESETDISK:
+    mov ax, 0
+    mov dl, 0
+    int 0x13
+    jc HANDLEDISKERROR
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Read Sector From Disk
+    ;;;;;;;;;;;;;;;;;;;;;;;;; 
+    mov si, 0x1000
+    mov es, si
+    mov bs, 0x0000
+
+    mov di, word[TOTALSECTORCOUNT]
+
+READDATE:
+    cmp di, 0
+    je READEND
+    sub di, 0x1
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Call BIOS Function
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ah, 0x02
+    mov al, 0x01
+    mov ch, byte[TRACKNUMBER]
+    mov cl, byte[SECTORNUMBER]
+    mov dh, byte[HEADNUMBER]
+    mod dl, 0x00
+    int 0x13
+    jc HANDLEDISKERROR
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Calculate Track, Sector and Head number
+    ;;;;;;;;;;;;;;;;;;;;;;;;; 
+    add si, 0x0020 ; add 512 byte
+    mov es, si
+
+    mov al, byte[SECTORNUMBER]
+    add al, 0x01
+    mov byte[SECTORNUMBER], al
+    cmp al, 19
+    jb READDATA
+
+    xor byte[HEADNUMBER], 0x01
+    mov byte[SECTORNUMBER], 0x01
+
+    cmp byte[HEADNUMBER], 0x00
+    jne READDATA
+
+    add byte[TRACKNUMBER], 0x01
+    jmp READDATA
+READEND:
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Print OS image load complete message
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    push LOADINGCOMPLETEMESSAGE
+    push 1
+    push 20
+    call PRINTMESSAGE
+    add sp, 6
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Running load OS image
+    ;;;;;;;;;;;;;;;;;;;;;;;;;
+    jmp 0x1000:0x0000
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+; Function code area
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
+HANDLEDISKERROR:
+    push DISKERRORMESSAGE
+    push 1
+    push 20
+    call PRINTMESSAGE
+
+    jmp $
+
+PRINTMESSAGE:
+    push bp
+    mov bp, sp
+
+    push es
+    push si
+    push di
+    push ax
+    push cx
+    push dx
+
+    mov ax, 0xB800
+    mov es, ax
+
+    ; Calculating Y cordinate
+    mov ax, word[bp+6]
+    mov si, 160
+    mul si
+    mov di, ax
+
+    ;Calculating X cordinate
+    mov ax, word[bp+4]
+    mov si, 2
+    mul si
+    add di, ax
+
+    mov si, word[bp + 8]
 
 .MESSAGELOOP:
     mov cl, byte[MESSAGE1 + si]
@@ -52,71 +192,30 @@ START:
     jb .MESSAGELOOP
 
 .MESSAGEEND:
+    pop dx
+    pop cx
+    pop ax
+    pop di
+    pop si
+    pop es
+    pop bp
+    ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-; Read OS Image Begin
+; Data area
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-        mov si, 0x1000
-        mov es, si
-        
-        mov bx, 0x0000
-
-        mov di, word[TOTALSECTORCOUNT]
-
-READDATA:
-    cmp di, 0
-    je READEND
-    sub di, 0x1
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; BIOS Function Calling
-    ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    mov ah, 0x02 ; function num
-    mov al, 0x1 ; read sector count
-    mov ch, byte[TRACKNUMBER]
-    mov cl, byte[SECTORNUMBER]
-    mov dh, byte[HEADNUMBER]
-    mov dl, 0x00
-
-    int 0x13 ; calling interupt service
-
-    jc HANDLEDISKERROR
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;
-    ; Calculating track, head, sector address
-    ;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    add si, 0x20
-    mov es, si
-
-    mov al, byte[SECTORNUMBER]
-    add al, 0x1
-
-    mov byte[SECTORNUMBER], al
-    cmp al, 19
-    jb READDATA
-
-    xor byte[HEADNUMBER], 0x01
-    mov byte[SECTORNUMBER], 0x01
-
-    cmp byte[HEADNUMBER], 0x00
-    jne READDATA
-
-    add byte[TRACKNUMBER], 0x01
-    jmp READDATA
-    
-READEND:
-    jmp $
-
-HANDLEDISKERROR:
-    jmp $
-
-
-jmp $
 
 MESSAGE1: db 'MINT64 OS Boot Loader Start~!!', 0
+
+DISKERRORMESSAGE: db 'Disk Error~!!', 0
+
+IMAGELOADINGMESSAGE: db 'OS Image Loading....', 0
+
+LOADINGCOMPLETEMESSAGE: db 'Complete~!!', 0
+
+SECTORNUMBER:   db  0x02
+HEADNUMBER:     db  0x00
+TRACKNUMBER:    db  0x00
 
 times 510 - ($ - $$)    db  0x00
 
