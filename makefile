@@ -15,9 +15,8 @@ BootLoader: 00.BootLoader/BootLoader.bin
 	@echo "BootLoader build complete."
 	@echo
 
-Kernel32: 01.Kernel32/VirtualOS.bin
 
-01.Kernel32/VirtualOS.bin: 01.Kernel32/Source/VirtualOS.asm
+01.Kernel32/Kernel32.bin: 01.Kernel32/Source/EntryPoint.s
 	@echo
 	@echo "Building Kernel..."
 	@echo
@@ -28,12 +27,12 @@ Kernel32: 01.Kernel32/VirtualOS.bin
 	@echo "Kernel build complete."
 	@echo
 
-Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32/VirtualOS.bin
+Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin
 	@echo
 	@echo "Creating Disk.img..."
 	@echo
 
-	cat 00.BootLoader/BootLoader.bin 01.Kernel32/VirtualOS.bin > Disk.img
+	cat 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin > Disk.img
 	truncate -s 1474560 Disk.img	
 
 	@echo
