@@ -1,4 +1,4 @@
-.PHONY: all BootLoader Kernel32 clean
+.PHONY: all BootLoader 01.Kernel32 clean
 
 all: Disk.img
 
@@ -16,7 +16,7 @@ BootLoader: 00.BootLoader/BootLoader.bin
 	@echo
 
 
-01.Kernel32/Kernel32.bin: 01.Kernel32/Source/EntryPoint.s
+01.Kernel32:
 	@echo
 	@echo "Building Kernel..."
 	@echo
@@ -27,12 +27,12 @@ BootLoader: 00.BootLoader/BootLoader.bin
 	@echo "Kernel build complete."
 	@echo
 
-Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin
+Disk.img: 00.BootLoader/BootLoader.bin 01.Kernel32
 	@echo
 	@echo "Creating Disk.img..."
 	@echo
 
-	./ImageMaker $^
+	./ImageMaker 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin
 
 	@echo
 	@echo "Disk.img creation complete."
