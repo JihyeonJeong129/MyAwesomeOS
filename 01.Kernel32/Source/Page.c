@@ -29,9 +29,10 @@ void kInitializePageTables(void) {
 
     // Initialize PD entry
     pstPDEntry = (PDENTRY*) 0x102000;
-    for (i = 0; i < PAGE_MAXENTRYCOUNT; i++) {
-        dwMappingAddress = 0;
-        kSetPageEntryData(&pstPDEntry[i], dwMappingAddress, (i * (PAGE_DEFAULTSIZE >> 20)) >> 12, 
+    dwMappingAddress = 0;
+
+    for (i = 0; i < PAGE_MAXENTRYCOUNT * 64; i++) {
+        kSetPageEntryData(&pstPDEntry[i], (i * (PAGE_DEFAULTSIZE >> 20)) >> 12, dwMappingAddress, 
          PAGE_FLAGS_DEFAULT | PAGE_FLAGS_PS, 0);
         dwMappingAddress += PAGE_DEFAULTSIZE;
     }
