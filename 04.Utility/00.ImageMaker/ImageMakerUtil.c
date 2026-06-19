@@ -58,7 +58,7 @@ int AdjustInSectorSize(int iFd, int iSourceSize) {
     return iSectorCount;
 }
 
-void WriteKernelInformation(int iTargetFd, int iKernelSectorCount) {
+void WriteKernelInformation(int iTargetFd, int iTotalKernelSectorCount, int iKernel32SectorCount) {
     unsigned short usData;
     long lPosition;
 
@@ -68,8 +68,12 @@ void WriteKernelInformation(int iTargetFd, int iKernelSectorCount) {
         exit(-1);
     }
 
-    usData = (unsigned short)iKernelSectorCount;
+    usData = (unsigned short)iTotalKernelSectorCount;
     write(iTargetFd, &usData, 2);
 
-    printf("[INFO] Total sector count except bootloader = [%d] Sector.\n", iKernelSectorCount);
+    usData = (unsigned short)iKernel32SectorCount;
+    write(iTargetFd, &usData, 2);
+
+    printf("[INFO] Total sector count except bootloader = [%d] Sector.\n", iTotalKernelSectorCount);
+    printf("[INFO] Protected mode kernel sector count = [%d] Sector.\n", iKernel32SectorCount);
 }

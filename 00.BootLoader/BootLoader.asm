@@ -9,7 +9,8 @@ jmp 0x07C0:START
 ; Floppy Disk Parameter for read OS image
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
-TOTALSECTORCOUNT:   dw  0x02
+TOTALSECTORCOUNT:       dw  0x02
+KERNEL32SECTORCOUNT:    dw  0x02
 
 
 START:

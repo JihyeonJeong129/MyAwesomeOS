@@ -15,7 +15,7 @@
 #define BYTE_OF_SECTOR_SIZE 512
 
 int AdjustInSectorSize(int iFd, int iSourceSize);
-void WriteKernelInformation(int iTargetFd, int iKernelSectorCount);
+void WriteKernelInformation(int iTargetFd, int iTotalKernelSectorCount, int iKernel32SectorCount);
 int CopyFile(int iSourceFd, int iTargetFd);
 
 #endif /* __IMAGEMAKERUTIL_H__ */

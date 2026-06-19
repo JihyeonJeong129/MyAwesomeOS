@@ -1,6 +1,6 @@
 [BITS 32]
 
-global kReadCPUID, kSwitchAndExcute64bitKernel
+global kReadCPUID, kSwitchAndExecute64bitKernel
 
 SECTION .text
 
@@ -52,7 +52,7 @@ kReadCPUID:
 ; Switch IA-32e mode and Excute 64-bit Kernel
 ; PARAM : None
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-kSwitchAndExcute64bitKernel:
+kSwitchAndExecute64bitKernel:
     ;set PAE bit to 1 (reg CR4)
     mov eax, cr4
     or eax, 0x20

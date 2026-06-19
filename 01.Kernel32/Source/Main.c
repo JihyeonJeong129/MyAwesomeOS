@@ -5,8 +5,9 @@
 void kPrintString(int iX, int iY, const char* pcString);
 BOOL kInitializeKernel64Area(void);
 BOOL kIsMemoryEnough(void);
+void kCopyKernel64ImageTo2Mbyte(void);
 
-void main(void) {
+void Main(void) {
 
     DWORD i;
     DWORD dwEAX, dwEBX, dwECX, dwEDX;
@@ -33,37 +34,42 @@ void main(void) {
     kInitializeKernel64Area();
     kPrintString(51, 6, "Pass");
 
-    // Build page tables for IA-32e mode
-    kPrintString(0, 7, "IA-32e Page Tables Initialized ...................[    ]");
-    kInitializePageTables();
+    // Copy IA-32e mode kernel to 2MB address.
+    kPrintString(0, 7, "IA-32e Kernel Image Copy .........................[    ]");
+    kCopyKernel64ImageTo2Mbyte();
     kPrintString(51, 7, "Pass");
 
+    // Build page tables for IA-32e mode
+    kPrintString(0, 8, "IA-32e Page Tables Initialized ...................[    ]");
+    kInitializePageTables();
+    kPrintString(51, 8, "Pass");
+
     //Read CPU Vendor String
-    kPrintString(0, 8, "Processor Vendor String Read .....................[    ]");
+    kPrintString(0, 9, "Processor Vendor String Read .....................[    ]");
     kReadCPUID(0x00, &dwEAX, &dwEBX, &dwECX, &dwEDX);
     *(DWORD*) vcVendorString = dwEBX;
     *((DWORD*) vcVendorString + 1) = dwEDX;
     *((DWORD*) vcVendorString + 2) = dwECX;
-    kPrintString(51, 8, "Pass");
-    kPrintString(0, 9, "Processor Vendor .........................[            ]");
-    kPrintString(43, 9, vcVendorString);    
+    kPrintString(51, 9, "Pass");
+    kPrintString(0, 10, "Processor Vendor .........................[            ]");
+    kPrintString(43, 10, vcVendorString);
 
     //Check support for 64bit mode
-    kPrintString(0, 10, "64bit Mode Support Check .........................[    ]");
+    kPrintString(0, 11, "64bit Mode Support Check .........................[    ]");
     kReadCPUID(0x80000001, &dwEAX, &dwEBX, &dwECX, &dwEDX);
     if ((dwEDX & (1 << 29)) == 0) {
-        kPrintString(51, 10, "Fail");
-        kPrintString(0, 11, "This processor does not support 64bit mode.");
+        kPrintString(51, 11, "Fail");
+        kPrintString(0, 12, "This processor does not support 64bit mode.");
         while (1);
     }
     else {
-        kPrintString(51, 10, "Pass");
-        kPrintString(0, 11, "This processor supports 64bit mode.");
+        kPrintString(51, 11, "Pass");
+        kPrintString(0, 12, "This processor supports 64bit mode.");
     }
 
     //switch to IA-32e mode and execute 64bit kernel
-    kPrintString(0, 12, "Switch to IA-32e Mode.");
-    //kSwitchAndExecute64bitKernel();
+    kPrintString(0, 13, "Switch to IA-32e Mode.");
+    kSwitchAndExecute64bitKernel();
     
     while (1);
 }
@@ -109,4 +115,26 @@ BOOL kIsMemoryEnough(void) {
     }
 
     return TRUE;
+}
+
+void kCopyKernel64ImageTo2Mbyte(void) {
+    WORD wKernel32SectorCount;
+    WORD wTotalKernelSectorCount;
+    DWORD* pdwSourceAddress;
+    DWORD* pdwDestinationAddress;
+    int i;
+    int iKernel64SectorCount;
+
+    wTotalKernelSectorCount = *((WORD*) 0x7C05);
+    wKernel32SectorCount = *((WORD*) 0x7C07);
+
+    pdwSourceAddress = (DWORD*) (0x10000 + (wKernel32SectorCount * 512));
+    pdwDestinationAddress = (DWORD*) 0x200000;
+    iKernel64SectorCount = wTotalKernelSectorCount - wKernel32SectorCount;
+
+    for (i = 0; i < (iKernel64SectorCount * 512 / 4); i++) {
+        *pdwDestinationAddress = *pdwSourceAddress;
+        pdwDestinationAddress++;
+        pdwSourceAddress++;
+    }
 }

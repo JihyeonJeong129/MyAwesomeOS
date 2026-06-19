@@ -5,14 +5,15 @@ int main(int argc, char* argv[]) {
     int iTargetFd;
     int iBootLoaderSize;
     int iKernel32SectorCount;
+    int iKernel64SectorCount;
     int iSourceSize;
 
-    if (argc != 3) {
-        fprintf(stderr, "[ERROR] ImageMaker BootLoader.bin Kernel32.bin\n");
+    if (argc != 5) {
+        fprintf(stderr, "[ERROR] ImageMaker BootLoader.bin Kernel32.bin Kernel64.bin Disk.img\n");
         exit(-1);
     }
 
-    iTargetFd = open("Disk.img", O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE);
+    iTargetFd = open(argv[4], O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IREAD | S_IWRITE);
     if (iTargetFd == -1) {
         fprintf(stderr, "[ERROR] Disk.img File Open Failed.\n");
         exit(-1);
@@ -53,10 +54,26 @@ int main(int argc, char* argv[]) {
     iKernel32SectorCount = AdjustInSectorSize(iTargetFd, iSourceSize);
     printf("[INFO] %s Size = [%d] Byte, Sector = [%d]\n", argv[2], 
         iSourceSize, iKernel32SectorCount);
+
+    // Copy IA-32e mode kernel to image file.
+    printf("[INFO] Copy IA-32e mode kernel to image file.\n");
+
+    iSourceFd = open(argv[3], O_RDONLY | O_BINARY);
+    if (iSourceFd == -1) {
+        fprintf(stderr, "[ERROR] %s File Open Failed.\n", argv[3]);
+        exit(-1);
+    }
+
+    iSourceSize = CopyFile(iSourceFd, iTargetFd);
+    close(iSourceFd);
+
+    iKernel64SectorCount = AdjustInSectorSize(iTargetFd, iSourceSize);
+    printf("[INFO] %s Size = [%d] Byte, Sector = [%d]\n", argv[3],
+        iSourceSize, iKernel64SectorCount);
         
     // Write kernel information to image file.
     printf("[INFO] Write kernel information to image file.\n");
-    WriteKernelInformation(iTargetFd, iKernel32SectorCount);
+    WriteKernelInformation(iTargetFd, iKernel32SectorCount + iKernel64SectorCount, iKernel32SectorCount);
     printf("[INFO] Image file create complete.\n");
 
     close(iTargetFd);

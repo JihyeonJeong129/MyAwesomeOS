@@ -2,7 +2,7 @@
 # Build environment
 ######################################
 NASM32 = nasm
-GCC32 = gcc -c -m32 -ffreestanding
+GCC32 = gcc -c -m32 -ffreestanding -I ../../00.Include 
 LD32 = ld -m elf_i386 -T ../../04.Utility/elf_i386.x -nostdlib -e Main -Ttext 0x10200
 OBJCPY32 = objcopy -j .text -j .data -j .rodata -j .bss -S -O binary
 
