@@ -32,3 +32,31 @@ kOutPortByte:
     pop rdx
 
     ret
+
+
+global kLoadGDTR, kLoadTR, kLoadIDTR
+
+; Set GDT Table at GDTR Registers
+kLoadGDTR:
+    lgdt [rdi]
+    ret
+
+; Set TSS Segment Descriptor at TR Registers
+kLoadTR:
+    ltr di
+    ret
+
+; Set IDT Table at IDTR Registers
+kLoadIDTR:
+    lidt [rdi]
+    ret
+
+
+global kGenerateDivideError
+
+kGenerateDivideError:
+    mov rax, 1
+    xor rdx, rdx
+    xor rcx, rcx
+    div rcx
+    ret

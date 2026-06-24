@@ -1,5 +1,7 @@
 #include "Types.h"
 #include "Keyboard.h"
+#include "Descriptor.h"
+#include "AssemblyUtility.h"
 
 void kPrintString(int iX, int iY, const char* pcString)
 {
@@ -23,17 +25,32 @@ void Main(void)
 
     kPrintString(0, 11, "Switch To IA-32e Mode Success~!!");
     kPrintString(0, 12, "IA-32e C Language Kernel Start....................[PASS]");
-    kPrintString(0, 13, "Keyboard Activate.................................[    ]");
+    
+    kPrintString(0, 13, "GDT Initialize And Switch For IA-32e Mode ........[    ]");
+    kInitializeGDTTablesAndTSS();
+    kLoadGDTR(GDTR_STARTADDRESS);
+    kPrintString(51, 13, "PASS");
+
+    kPrintString(0, 14, "TSS Segment Load..................................[    ]");
+    kLoadTR(GDT_TSSSEGMENT);
+    kPrintString(51, 14, "PASS");
+
+    kPrintString(0, 15, "IDT Initialize....................................[    ]");
+    kInitializeIDTTables();
+    kLoadIDTR(IDTR_STARTADDRESS);
+    kPrintString(51, 15, "PASS");
+
+    kPrintString(0, 16, "Keyboard Activate.................................[    ]");
 
     // Activate the keyboard
     if (kActivateKeyboard() == TRUE)
     {
-        kPrintString(51, 13, "PASS");
+        kPrintString(51, 16, "PASS");
         kChangeKeyboardLED(FALSE, FALSE, FALSE);
     }
     else
     {
-        kPrintString(51, 13, "FAIL");
+        kPrintString(51, 16, "FAIL");
         while (1)
         {
             ;
@@ -50,7 +67,13 @@ void Main(void)
             {
                 if (bFlag & KEY_FLAGS_DOWN)
                 {
-                    kPrintString(i++, 14, vcTemp);
+                    kPrintString(i++, 17, vcTemp);
+
+                    if(vcTemp[0] == '0')
+                    {
+                        // Activate Temp Exception Handler
+                         kGenerateDivideError();
+                    }
                 }
             }
         }
