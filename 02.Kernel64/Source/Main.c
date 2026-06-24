@@ -2,6 +2,7 @@
 #include "Keyboard.h"
 #include "Descriptor.h"
 #include "AssemblyUtility.h"
+#include "PIC.h"
 
 void kPrintString(int iX, int iY, const char* pcString)
 {
@@ -56,6 +57,12 @@ void Main(void)
             ;
         }
     }
+
+    kPrintString(0, 17, "PIC Controller And Interrupt Initialize...........[    ]");
+    kInitializePIC();
+    kMaskPICInterrupt(0);
+    kEnableInterrupt();
+    kPrintString(51, 17, "PASS");
 
     while (1)
     {

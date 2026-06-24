@@ -60,3 +60,19 @@ kGenerateDivideError:
     xor rcx, rcx
     div rcx
     ret
+
+
+
+global kEnableInterrupt, kDisableInterrupt, kReadFLAGS
+
+kEnableInterrupt:
+    sti
+    ret
+
+kDisableInterrupt:
+    cli
+    ret
+
+kReadFLAGS:
+    pushfq
+    pop rax

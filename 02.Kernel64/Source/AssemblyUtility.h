@@ -13,4 +13,8 @@ void kLoadIDTR(QWORD qwIDTRAddress);
 
 void kGenerateDivideError(void);
 
+void kEnableInterrupt(void);
+void kDisableInterrupt(void);
+QWORD kReadRFLAGS(void);
+
 #endif /* __ASSEMBLYUTILITY_H__ */

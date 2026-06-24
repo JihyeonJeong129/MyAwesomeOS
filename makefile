@@ -47,6 +47,7 @@ Disk.img: ImageMaker 00.BootLoader/BootLoader.bin 01.Kernel32 02.Kernel64
 	@echo
 
 	./ImageMaker 00.BootLoader/BootLoader.bin 01.Kernel32/Kernel32.bin 02.Kernel64/Kernel64.bin Disk.img
+	truncate -s 1474560 Disk.img
 
 	@echo
 	@echo "Disk.img creation complete."
