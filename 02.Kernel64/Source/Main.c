@@ -23,6 +23,7 @@ void Main(void)
     BYTE bFlag;
     BYTE bTemp;
     int i = 0;
+    KEYDATA stData;
 
     kPrintString(0, 11, "Switch To IA-32e Mode Success~!!");
     kPrintString(0, 12, "IA-32e C Language Kernel Start....................[PASS]");
@@ -41,10 +42,10 @@ void Main(void)
     kLoadIDTR(IDTR_STARTADDRESS);
     kPrintString(51, 15, "PASS");
 
-    kPrintString(0, 16, "Keyboard Activate.................................[    ]");
+    kPrintString(0, 16, "Keyboard Activate and Queue Initialize............[    ]");
 
     // Activate the keyboard
-    if (kActivateKeyboard() == TRUE)
+    if (kInitializeKeyboard() == TRUE)
     {
         kPrintString(51, 16, "PASS");
         kChangeKeyboardLED(FALSE, FALSE, FALSE);
@@ -66,21 +67,17 @@ void Main(void)
 
     while (1)
     {
-        if (kIsOutputBufferFull() == TRUE)
+        if (kGetKeyFromKeyQueue(&stData) == TRUE)
         {
-            bTemp = kGetKeyboardScanCode();
-
-            if (kConvertScanCodeToASCIICode(bTemp, &vcTemp[0], &bFlag) == TRUE)
+            if (stData.bFlags & KEY_FLAGS_DOWN)
             {
-                if (bFlag & KEY_FLAGS_DOWN)
-                {
-                    kPrintString(i++, 17, vcTemp);
+                vcTemp[0] = stData.bASCIICode;
+                kPrintString(i++, 18, vcTemp);
 
-                    if(vcTemp[0] == '0')
-                    {
-                        // Activate Temp Exception Handler
-                         kGenerateDivideError();
-                    }
+                if(vcTemp[0] == '0')
+                {
+                    // Activate Temp Exception Handler
+                    kGenerateDivideError();
                 }
             }
         }

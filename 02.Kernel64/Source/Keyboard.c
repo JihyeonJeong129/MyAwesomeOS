@@ -1,6 +1,8 @@
 #include "Types.h"
 #include "Keyboard.h"
 #include "AssemblyUtility.h"
+#include "Queue.h"
+#include "Utility.h"
 
 //////////////////////////////////////
 //  Function about Keyboard controller
@@ -29,12 +31,49 @@ BOOL kIsInputBufferFull(void)
     return FALSE;
 }
 
+// Wait ACK
+BOOL kWaitForACKAndPutOtherScanCode(void)
+{
+    int i, j;
+    BYTE bData;
+    BOOL bResult = FALSE;
+
+    // Check ACK response from the keyboard.
+    for (i = 0; i < 100; i++)
+    {
+        for (j = 0; j < 0xFFFF; j++) {
+            if (kIsOutputBufferFull() == TRUE)
+            {
+                break;
+            }
+        }
+
+        bData = kInPortByte(0x60);
+
+        if (bData == 0xFA) {
+            bResult = TRUE;
+            break;
+        }
+        else {
+            kConvertScanCodeAndPutQueue(bData);
+        }
+    }
+
+    return bResult;
+}
+
 // Activate Keyboard and return TRUE if successful; otherwise returns FALSE.
 BOOL kActivateKeyboard(void)
 {    
     int i;
     int j;
 
+    BOOL bPreviousInterrupt;
+    BOOL bResult;
+
+    // disable the interrupt for the keyboard.
+    bPreviousInterrupt = kSetInterruptFlag(FALSE);
+    
     // Send the command to activate the keyboard.
     kOutPortByte(0x64, 0xAE);
 
@@ -50,24 +89,12 @@ BOOL kActivateKeyboard(void)
     kOutPortByte(0x60, 0xF4);
 
     // Wait for the ACK response from the keyboard.
-    for (i = 0; i < 100; i++)
-    {
-        for (j = 0; j < 0xFFFF; j++)
-        {
-            if (kIsOutputBufferFull() == TRUE)
-            {
-                break;
-            }
-        }
-        
-        // If the data is ACK (0xFA), return TRUE.
-        if (kInPortByte(0x60) == 0xFA)
-        {
-            return TRUE;
-        }
-    }
+    bResult = kWaitForACKAndPutOtherScanCode();
 
-    return FALSE;
+    // Restore the previous interrupt flag.
+    kSetInterruptFlag(bPreviousInterrupt);
+
+    return bResult;
 }
 
 // Returns the scan code from the output buffer.
@@ -91,6 +118,13 @@ BYTE kChangeKeyboardLED(BOOL bCapsLockOn, BOOL bNumLockOn, BOOL bScrollLockOn)
     int i;
     int j;
     
+    BOOL bPreviousInterrupt;
+    BOOL bResult;
+    BYTE bData;
+
+    // disable the interrupt for the keyboard.
+    bPreviousInterrupt = kSetInterruptFlag(FALSE);
+
     for (i = 0; i < 0xFFFF; i++)
     {
         // Check if the input buffer is full.
@@ -113,27 +147,14 @@ BYTE kChangeKeyboardLED(BOOL bCapsLockOn, BOOL bNumLockOn, BOOL bScrollLockOn)
     }
 
     // Wait for the ACK response from the keyboard.
-    for (i = 0; i < 100; i++)
-    {
-        for (j = 0; j < 0xFFFF; j++)
-        {
-            if (kIsOutputBufferFull() == TRUE)
-            {
-                break;
-            }
-        }
+    bResult = kWaitForACKAndPutOtherScanCode();
 
-        if (kInPortByte(0x60) == 0xFA)
-        {
-            break;
-        }
-    }
-
-    // If the ACK response is not received, return FALSE.
-    if (i >= 100)
+    if (bResult == FALSE)
     {
+        kSetInterruptFlag(bPreviousInterrupt);
         return FALSE;
     }
+
 
     // Send the LED status to the keyboard.
     kOutPortByte(0x60, (bCapsLockOn << 2) | (bNumLockOn << 1) | bScrollLockOn);
@@ -148,23 +169,11 @@ BYTE kChangeKeyboardLED(BOOL bCapsLockOn, BOOL bNumLockOn, BOOL bScrollLockOn)
     }
 
     // Wait for the ACK response from the keyboard.
-    for (i = 0; i < 100; i++)
-    {
-        for (j = 0; j < 0xFFFF; j++)
-        {
-            if (kIsOutputBufferFull() == TRUE)
-            {
-                break;
-            }
-        }
+    bResult = kWaitForACKAndPutOtherScanCode();
 
-        if (kInPortByte(0x60) == 0xFA)
-        {
-            return TRUE;
-        }
-    }
+    kSetInterruptFlag(bPreviousInterrupt);
 
-    return FALSE;
+    return bResult;
 }
 
 
@@ -233,6 +242,10 @@ void kReboot(void)
 
 // Keyboard manager structure
 static KEYBOARDMANAGER gs_stKeyboardManager = { 0, };
+
+// Define Queue and Buffer for storing key data
+static Queue gs_stKeyQueue;
+static KEYDATA gs_vstKeyQueueBuffer[KEY_MAXQUEUECOUNT];
 
 // Table for converting scan codes to ASCII codes
 static KEYMAPPINGENTRY gs_vstKeyMappingTable[KEY_MAPPINGTABLEMAXCOUNT] =
@@ -529,5 +542,58 @@ BOOL kConvertScanCodeToASCIICode(BYTE bScanCode, BYTE* pbASCIICode, BOOL* pbFlag
     kUpdateCombinationKeyStatusAndLED(bScanCode);
 
     return TRUE;
+}
+
+// Initialize the keyboard manager structure
+BOOL kInitializeKeyboard(void)
+{
+    // Initialize Queue for keyboard input
+    kInitializeQueue( &gs_stKeyQueue, gs_vstKeyQueueBuffer, KEY_MAXQUEUECOUNT, 
+        sizeof(KEYDATA));
+
+    // Activate the keyboard
+    return kActivateKeyboard();
+}
+
+
+BOOL kConvertScanCodeAndPutQueue(BYTE bScanCode)
+{
+    KEYDATA stData;
+    BOOL bResult;
+    BOOL bPreviousInterrupt;
+
+    stData.bScanCode = bScanCode;
+
+    // Convert the scan code to an ASCII code.
+    bResult = kConvertScanCodeToASCIICode(bScanCode, &stData.bASCIICode, &stData.bFlags);
+
+    if (bResult == TRUE)
+    {
+        bPreviousInterrupt = kSetInterruptFlag(FALSE);
+        bResult = kPutQueue(&gs_stKeyQueue, &stData);
+        kSetInterruptFlag(bPreviousInterrupt);
+    }
+
+    return bResult;
+}
+
+BOOL kGetKeyFromKeyQueue(KEYDATA* pstData)
+{
+    BOOL bPreviousInterrupt;
+    BOOL bResult;
+
+    if (kIsQueueEmpty(&gs_stKeyQueue) == TRUE)
+    {
+        return FALSE;
+    }
+
+    // Disable interrupts
+    bPreviousInterrupt = kSetInterruptFlag(FALSE);
+
+    bResult = kGetQueue(&gs_stKeyQueue, pstData);
+
+    kSetInterruptFlag(bPreviousInterrupt);
+
+    return bResult;
 }
     

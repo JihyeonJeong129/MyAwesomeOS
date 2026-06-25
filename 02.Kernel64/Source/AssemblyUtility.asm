@@ -63,7 +63,7 @@ kGenerateDivideError:
 
 
 
-global kEnableInterrupt, kDisableInterrupt, kReadFLAGS
+global kEnableInterrupt, kDisableInterrupt, kReadRFLAGS
 
 kEnableInterrupt:
     sti
@@ -73,6 +73,7 @@ kDisableInterrupt:
     cli
     ret
 
-kReadFLAGS:
+kReadRFLAGS:
     pushfq
     pop rax
+    ret
