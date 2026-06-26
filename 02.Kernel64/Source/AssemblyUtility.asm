@@ -77,3 +77,17 @@ kReadRFLAGS:
     pushfq
     pop rax
     ret
+
+
+global kReadTSC
+
+kReadTSC:
+    push rdx
+    
+    rdtsc
+
+    shl rdx, 32
+    or rax, rdx
+
+    pop rdx
+    ret
