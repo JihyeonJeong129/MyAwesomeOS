@@ -1,4 +1,5 @@
 #include "Queue.h"
+#include "Utility.h"
 
 // Initialize the queue
 void kInitializeQueue(Queue* pstQueue, void* pvQueueBuffer, 

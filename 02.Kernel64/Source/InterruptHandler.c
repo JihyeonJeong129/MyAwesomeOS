@@ -1,6 +1,8 @@
 #include "InterruptHandler.h"
 #include "PIC.h"
 #include "Keyboard.h"
+#include "Console.h"
+#include "Utility.h"
 
 void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode) {
     

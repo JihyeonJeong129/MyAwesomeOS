@@ -3,6 +3,9 @@
 #include "Descriptor.h"
 #include "AssemblyUtility.h"
 #include "PIC.h"
+#include "Console.h"
+#include "ConsoleShell.h"
+#include "Utility.h"
 
 void kPrintString(int iX, int iY, const char* pcString)
 {
@@ -25,8 +28,8 @@ void Main(void)
     int i = 0;
     KEYDATA stData;
 
-    kPrintString(0, 11, "Switch To IA-32e Mode Success~!!");
-    kPrintString(0, 12, "IA-32e C Language Kernel Start....................[PASS]");
+    kPrintf("Switch To IA-32e Mode Success~!!\n");
+    kPrintf("IA-32e C Language Kernel Start....................[PASS]\n");
     
     kPrintString(0, 13, "GDT Initialize And Switch For IA-32e Mode ........[    ]");
     kInitializeGDTTablesAndTSS();
@@ -42,44 +45,37 @@ void Main(void)
     kLoadIDTR(IDTR_STARTADDRESS);
     kPrintString(51, 15, "PASS");
 
-    kPrintString(0, 16, "Keyboard Activate and Queue Initialize............[    ]");
+    kSetCursor(0, 16);
+    kPrintf("Total RAM Size check.............. [                   ]");
+    kCheckTotalRAMSize();
+    kSetCursor(36, 16);
+    kPrintf("PASS, Size = %d MB\n", kGetTotalRAMSize());
+
+    kPrintf("Keyboard Activate and Queue Initialize............[    ]");
 
     // Activate the keyboard
     if (kInitializeKeyboard() == TRUE)
     {
-        kPrintString(51, 16, "PASS");
+        kSetCursor(51, 17);
+        kPrintf("PASS\n");
         kChangeKeyboardLED(FALSE, FALSE, FALSE);
     }
     else
     {
-        kPrintString(51, 16, "FAIL");
+        kSetCursor(51, 17);
+        kPrintf("FAIL\n");
         while (1)
         {
             ;
         }
     }
 
-    kPrintString(0, 17, "PIC Controller And Interrupt Initialize...........[    ]");
+    kPrintf("PIC Controller And Interrupt Initialize...........[    ]");
     kInitializePIC();
     kMaskPICInterrupt(0);
     kEnableInterrupt();
-    kPrintString(51, 17, "PASS");
+    kSetCursor(51, 18);
+    kPrintf("PASS\n");
 
-    while (1)
-    {
-        if (kGetKeyFromKeyQueue(&stData) == TRUE)
-        {
-            if (stData.bFlags & KEY_FLAGS_DOWN)
-            {
-                vcTemp[0] = stData.bASCIICode;
-                kPrintString(i++, 18, vcTemp);
-
-                if(vcTemp[0] == '0')
-                {
-                    // Activate Temp Exception Handler
-                    kGenerateDivideError();
-                }
-            }
-        }
-    }
+    kStartConsoleShell();
 }

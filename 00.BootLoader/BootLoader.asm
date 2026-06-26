@@ -206,7 +206,7 @@ PRINTMESSAGE:
 ; Data area
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
-MESSAGE1: db 'MINT64 OS Boot Loader Start~!!', 0
+MESSAGE1: db 'MyAwesomeOS Boot Loader Start~!!', 0
 
 DISKERRORMESSAGE: db 'Disk Error~!!', 0
 
