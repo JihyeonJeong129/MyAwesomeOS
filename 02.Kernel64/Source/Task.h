@@ -3,6 +3,8 @@
 
 #include "Types.h"
 
+#include "list.h"
+
 #define TASK_REGISTERS_COUNT 24
 #define TASK_REGISTERS_SIZE  8
 
@@ -32,13 +34,31 @@
 #define TASK_RSP_OFFSET 22
 #define TASK_SS_OFFSET 23
 
+// Task pool Address
+#define TASK_TCBPOOLADDRESS 0x800000
+#define TASK_MAXCOUNT 1024
+
+// Task Pool and Stack size
+#define TASK_STACKPOOLADDRESS (TASK_TCBPOOLADDRESS + (sizeof(TCB) * TASK_MAXCOUNT))
+#define TASK_STACKSIZE 8192
+
+// Invalid ID
+#define TASK_INVALIDID 0xFFFFFFFFFFFFFFFF
+
+// Maximum processor time for a task (ms)
+#define TASK_PROCESSORTIME 5
+
+
 #pragma pack(push, 1)
 
 typedef struct kContextStruct {
     QWORD vqRegister[TASK_REGISTERS_COUNT];
 } CONTEXT;
 
+
 typedef struct kTaskControlBlockStruct {
+    LISTHEAD stLink;
+    
     CONTEXT stContext;
 
     QWORD qwFlags;
@@ -48,11 +68,49 @@ typedef struct kTaskControlBlockStruct {
     QWORD qwStackSize;
 } TCB;
 
+
+typedef struct kTCBPoolManagerStruct {
+    
+    TCB* pstStartAddress;
+    
+    int iMaxCount;
+    int iUseCount;
+    int iAllocatedCount;
+} TCBPOOLMANAGER;
+
+typedef struct kSchedulerStruct {
+    TCB* pstRunningTask;
+
+    int iProcessorTime;
+
+    LISTHEAD stReadyList;
+} SCHEDULER;
+
+
 #pragma pack(pop)
 
 
 // Functions
 void kSetupTask(TCB* pstTCB, QWORD qwFlags, QWORD qwID, QWORD qwEntryPointAddress, 
     void* pvStackAddress, QWORD qwStackSize);
+
+
+// For Task Pool and Task
+void kInitializeTCBPool(void);
+TCB* kAllocateTCB(void);
+void kFreeTCB(QWORD qwID);
+TCB* kCreateTask(QWORD qwFlags, QWORD qwEntryPointAddress);
+
+// For Scheduler
+void kInitializeScheduler(void);
+void kSetRunningTask(TCB* pstTask);
+TCB* kGetRunningTask(void);
+TCB* kGetNextTaskToRun(void);
+void kAddTaskToReadyList(TCB* pstTask);
+void kSchedule(void);
+BOOL kScheduleInInterrupt(void);
+void kDecreaseProcessorTime(void);
+BOOL kIsProcessorTimeExpired(void);
+
 
 #endif // __TASK_H__

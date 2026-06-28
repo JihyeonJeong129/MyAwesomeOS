@@ -3,6 +3,8 @@
 #include "Keyboard.h"
 #include "Console.h"
 #include "Utility.h"
+#include "Task.h"
+#include "Descriptor.h"
 
 void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode) {
     
@@ -73,4 +75,39 @@ void kKeyboardHandler(int iVectorNumber) {
 
     // Send EOI to PIC
     kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);
+}
+
+void kTimerHandler(int iVectorNumber) {
+    
+    char vcBuffer[] = "[INT:  , ]";
+
+    static int g_iTimerInterruptCount = 0;
+
+    vcBuffer[5] = '0' + iVectorNumber / 10;
+    vcBuffer[6] = '0' + iVectorNumber % 10;
+    vcBuffer[8] = '0' + g_iTimerInterruptCount;
+
+    g_iTimerInterruptCount = (g_iTimerInterruptCount + 1) % 10;
+
+    //kPrintString(0, 0, "=========================================");
+    //kPrintString(0, 1, "==Keyboard Interrupt Handler Execute~!!==");
+    //kPrintString(0, 2, "====Interrupt or Exception Occur~!!!=====");
+    //kPrintString(13, 3, vcBuffer);
+    //kPrintString(0, 4, "=========================================");
+    //kPrintString(0, 5, "                                        ");
+
+    // Send EOI to PIC
+    kSendEOIToPIC(iVectorNumber - PIC_IRQSTARTVECTOR);
+
+    // Increase the tick count
+    g_qwTickCount++;
+        
+    // Decrease the processor time
+    kDecreaseProcessorTime();
+
+    // If the processor time is over, schedule the next task
+    if (kIsProcessorTimeExpired() == TRUE) {
+        kScheduleInInterrupt();
+    }
+
 }

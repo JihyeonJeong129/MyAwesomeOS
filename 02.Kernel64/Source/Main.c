@@ -6,6 +6,8 @@
 #include "Console.h"
 #include "ConsoleShell.h"
 #include "Utility.h"
+#include "Task.h"
+#include "PIT.h"
 
 void kPrintString(int iX, int iY, const char* pcString)
 {
@@ -51,18 +53,24 @@ void Main(void)
     kSetCursor(36, 16);
     kPrintf("PASS, Size = %d MB\n", kGetTotalRAMSize());
 
+    kPrintf("TCB Pool And Scheduler Initialize.................[    ]");
+    kInitializeScheduler();
+    kSetCursor(51, 17);
+    kPrintf("PASS\n");
+    kInitializePIT(MSTOCOUNT(1), 1);
+
     kPrintf("Keyboard Activate and Queue Initialize............[    ]");
 
     // Activate the keyboard
     if (kInitializeKeyboard() == TRUE)
     {
-        kSetCursor(51, 17);
+        kSetCursor(51, 18);
         kPrintf("PASS\n");
         kChangeKeyboardLED(FALSE, FALSE, FALSE);
     }
     else
     {
-        kSetCursor(51, 17);
+        kSetCursor(51, 18);
         kPrintf("FAIL\n");
         while (1)
         {
@@ -74,7 +82,7 @@ void Main(void)
     kInitializePIC();
     kMaskPICInterrupt(0);
     kEnableInterrupt();
-    kSetCursor(51, 18);
+    kSetCursor(51, 19);
     kPrintf("PASS\n");
 
     kStartConsoleShell();

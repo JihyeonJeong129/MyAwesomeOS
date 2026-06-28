@@ -18,7 +18,7 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"rdtsc", "Read Time Stamp Counter", kReadTimeStampCounter},
     {"cpuspeed", "Measure Processor Speed", kMeasureProcessorSpeed},
     {"showtime", "Show Date And Time", kShowDateAndTime},
-    {"createtask", "Create Test Task", kCreateTestTask}
+    {"createtask", "Create Test Task ex)createtask 1(type) 10(count)", kCreateTestTask}
 };
 
 
@@ -359,21 +359,155 @@ void kTestTask(void) {
 
 // Create Test Task and Excute Multitasking
 void kCreateTestTask(const char* pcParameter) {
-    KEYDATA stData;
-    int i=0;
+    PARAMETERLIST stList;
+    char vcType[30];
+    char vcCount[30];
+    int i = 0;
+    int iCount;
+    int iClearStartOffset;
+    int iClearCount;
+    BOOL bPreviousInterruptFlag;
+    CHARACTER* pstScreen = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
 
-    // Set up the task
-    kSetupTask(&gs_vstTask[1], 1, 0, (QWORD)kTestTask, &gs_vstStack, sizeof(gs_vstStack));
+    kInitializeParameter(&stList, pcParameter);
+    kGetNextParameter(&stList, vcType);
+    kGetNextParameter(&stList, vcCount);
+    iCount = kAToI(vcCount, 10);
+
+    switch(kAToI(vcType, 10)) {
+        case 1:
+            for(i=0; i<iCount; i++) {
+               if(kCreateTask(0, (QWORD)kTestTask1) == NULL) {
+                   kPrintf("Task Create Fail\n");
+                   return;
+               }
+            }
+            break;
+            
+        case 2:
+        default:
+            bPreviousInterruptFlag = kSetInterruptFlag(FALSE);
+
+            iClearCount = iCount * 2;
+            if (iClearCount > CONSOLE_WIDTH * CONSOLE_HEIGHT) {
+                iClearCount = CONSOLE_WIDTH * CONSOLE_HEIGHT;
+            }
+
+            iClearStartOffset = CONSOLE_WIDTH * CONSOLE_HEIGHT - iClearCount;
+            for (i = iClearStartOffset; i < CONSOLE_WIDTH * CONSOLE_HEIGHT; i++) {
+                pstScreen[i].bCharacter = ' ';
+                pstScreen[i].bAttribute = CONSOLE_DEFAULT_TEXT_COLOR;
+            }
+
+            for(i=0; i<iCount; i++) {
+               if(kCreateTask(0, (QWORD)kTestTask2) == NULL) {
+                   kPrintf("Task Create Fail\n");
+                   kSetInterruptFlag(bPreviousInterruptFlag);
+                   return;
+               }
+            }
+
+            kSetInterruptFlag(bPreviousInterruptFlag);
+            break;
+    }
+}
+
+// Task 1
+void kTestTask1(void) {
+    BYTE bData;
+    int i = 0;
+    int iX = 0, iY = 0;
+    int iMargin;
+    int j;
+
+    CHARACTER* pstScreen = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
+    TCB* pstRunningTask;
+
+    pstRunningTask = kGetRunningTask();
+    iMargin = (pstRunningTask->qwID  & 0xFFFFFFFF) % 10;
+    iX = iMargin;
+    iY = iMargin;
+    bData = 'A' + iMargin;
+
+    for (j = iMargin; j < CONSOLE_WIDTH - iMargin; j++) {
+        pstScreen[iMargin * CONSOLE_WIDTH + j].bCharacter = ' ';
+        pstScreen[iMargin * CONSOLE_WIDTH + j].bAttribute = CONSOLE_DEFAULT_TEXT_COLOR;
+        pstScreen[(CONSOLE_HEIGHT - 1 - iMargin) * CONSOLE_WIDTH + j].bCharacter = ' ';
+        pstScreen[(CONSOLE_HEIGHT - 1 - iMargin) * CONSOLE_WIDTH + j].bAttribute =
+            CONSOLE_DEFAULT_TEXT_COLOR;
+    }
+
+    for (j = iMargin; j < CONSOLE_HEIGHT - iMargin; j++) {
+        pstScreen[j * CONSOLE_WIDTH + iMargin].bCharacter = ' ';
+        pstScreen[j * CONSOLE_WIDTH + iMargin].bAttribute = CONSOLE_DEFAULT_TEXT_COLOR;
+        pstScreen[j * CONSOLE_WIDTH + CONSOLE_WIDTH - 1 - iMargin].bCharacter = ' ';
+        pstScreen[j * CONSOLE_WIDTH + CONSOLE_WIDTH - 1 - iMargin].bAttribute =
+            CONSOLE_DEFAULT_TEXT_COLOR;
+    }
 
     while (1) {
-        kPrintf("[%d] This message is from kConsoleShell. Press any key to switch "
-            "kTestTask.\n", i++);
         
-        if(kGetCh() == 'q') {
-            kPrintf("kConsoleShell is terminated.\n");
+        switch (i)
+        {
+        case 0:
+            iX++;
+            if (iX >= (CONSOLE_WIDTH - 1 - iMargin)) {
+                i=1;
+            }
+            break;
+
+            case 1:
+                iY++;
+                if (iY >= (CONSOLE_HEIGHT - 1 - iMargin)) {
+                    i=2;
+            }
+            break;
+
+            case 2:
+                iX--;
+                if (iX <= iMargin) {
+                    i=3;
+            }
+            break;
+
+            case 3:
+                iY--;
+                if (iY <= iMargin) {
+                    i=0;
+            }
             break;
         }
 
-        kSwitchContext(&(gs_vstTask[0].stContext), &(gs_vstTask[1].stContext));
+        pstScreen[iY * CONSOLE_WIDTH + iX].bCharacter = bData;
+        pstScreen[iY * CONSOLE_WIDTH + iX].bAttribute = bData & 0x0F;
+        bData++;
+
+        kSchedule();
+    }
+}
+
+
+// Task 2
+void kTestTask2(void) {
+    int i = 0;
+    int iOffset;
+    CHARACTER* pstScreen = (CHARACTER*)CONSOLE_VIDEOMEMORYADDRESS;
+    TCB* pstRunningTask;
+    char vcData[4] = {'-', '\\', '|', '/'};
+
+    pstRunningTask = kGetRunningTask();
+    iOffset = CONSOLE_WIDTH * CONSOLE_HEIGHT - 1 -
+        (((pstRunningTask->qwID & 0xFFFFFFFF) * 2) %
+        (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+
+    pstScreen[iOffset].bCharacter = ' ';
+    pstScreen[iOffset].bAttribute = CONSOLE_DEFAULT_TEXT_COLOR;
+
+    while (1) {
+        pstScreen[iOffset].bCharacter = vcData[i % 4];
+        pstScreen[iOffset].bAttribute = (iOffset % 15) + 1;
+        i++;
+
+        kSchedule();
     }
 }
