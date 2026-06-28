@@ -44,4 +44,6 @@ void kReadTimeStampCounter(const char* pcParameter);
 void kMeasureProcessorSpeed(const char* pcParameter);
 void kShowDateAndTime(const char* pcParameter);
 
+void kCreateTestTask(const char* pcParameter);
+
 #endif /*__CONSOLESHELL_H__*/

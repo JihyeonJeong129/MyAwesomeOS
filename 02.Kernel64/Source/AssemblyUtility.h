@@ -2,6 +2,7 @@
 #define __ASSEMBLYUTILITY_H__
 
 #include "Types.h"
+#include "Task.h"
 
 //Functions for port I/O operations
 BYTE kInPortByte(WORD wPort);
@@ -18,5 +19,7 @@ void kDisableInterrupt(void);
 QWORD kReadRFLAGS(void);
 
 QWORD kReadTSC(void);
+
+void kSwitchContext(CONTEXT* pstCurrentContext, CONTEXT* pstNextContext);
 
 #endif /* __ASSEMBLYUTILITY_H__ */

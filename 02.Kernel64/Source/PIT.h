@@ -37,7 +37,7 @@
 
 #define PIT_COUNTER0_LATCH (PIT_CONTROL_COUNTER0 | PIT_CONTROL_LATCH)
 
-// Funtion
+// Function
 void kInitializePIT(WORD wCount, BOOL bPeriodic);
 WORD kReadCounter0(void);
 void kWaitUsingPIT(WORD wCount);
