@@ -114,16 +114,16 @@ BYTE kGetCh(void) {
     KEYDATA stData;
     while (1) {
 
-        while (1) {
-            if (kGetKeyFromKeyQueue(&stData) == TRUE) {
-                break;
-            }
+        while (kGetKeyFromKeyQueue(&stData) == FALSE) {
+            kSchedule();
         }
 
         if (stData.bFlags & KEY_FLAGS_DOWN) {
             return stData.bASCIICode;
         }
     }
+
+
 }
 
 // Print character to the console at X, Y position

@@ -94,21 +94,21 @@ QWORD kGetTotalRAMSize(void){
 }
 
 
-long kAToI (const char* pcBuffer, int iRadix){
-    long lReturn = 0;
+QWORD kAToI (const char* pcBuffer, int iRadix){
+    QWORD qwReturn = 0;
     
     switch(iRadix){
         case 16:
-            lReturn = kHexStringToQword(pcBuffer);
+            qwReturn = kHexStringToQword(pcBuffer);
             break;
         case 10:
-            lReturn = kDecimalStringToLong(pcBuffer);
+            qwReturn = kDecimalStringToLong(pcBuffer);
             break;
         default:
             return 0;
     }
 
-    return lReturn;
+    return qwReturn;
 }
 
 
@@ -139,7 +139,7 @@ long kDecimalStringToLong(const char* pcBuffer){
 }
 
 // Convert hex string to QWORD
-int kHexStringToQword(const char* pcBuffer){
+QWORD kHexStringToQword(const char* pcBuffer){
     QWORD qwReturn = 0;
     int i;
 
@@ -307,6 +307,8 @@ int kVSPrintf(char* pcBuffer, const char* pcFormatString, va_list ap){
                     
                 case 'x':
                 case 'X':
+                case 'q':
+                case 'Q':
                     qwValue = (QWORD) va_arg(ap, QWORD);
                     iBufferIndex += kIToA(qwValue, pcBuffer + iBufferIndex, 16);
                     break;

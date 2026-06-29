@@ -37,6 +37,19 @@ static inline BOOL list_empty(const LISTHEAD* pstHead)
     return (pstHead->pstNext == pstHead);
 }
 
+static inline int list_count(const LISTHEAD* pstHead)
+{
+    int iCount = 0;
+    const LISTHEAD* pstEntry;
+
+    for (pstEntry = pstHead->pstNext; pstEntry != pstHead;
+         pstEntry = pstEntry->pstNext) {
+        iCount++;
+    }
+
+    return iCount;
+}
+
 static inline void __list_add(LISTHEAD* pstNew, LISTHEAD* pstPrev,
         LISTHEAD* pstNext)
 {

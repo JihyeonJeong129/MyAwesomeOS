@@ -81,6 +81,7 @@ void Main(void)
     kPrintf("PIC Controller And Interrupt Initialize...........[    ]");
     kInitializePIC();
     kMaskPICInterrupt(0);
+    kCreateTask(TASK_FLAGS_LOW | TASK_FLAGS_IDLE, (QWORD) kIdleTask);
     kEnableInterrupt();
     kSetCursor(51, 19);
     kPrintf("PASS\n");

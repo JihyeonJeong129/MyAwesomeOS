@@ -197,3 +197,10 @@ kSwitchContext:
     ; Recover Registers from Context
     KLOADCONTEXT
     iretq
+
+global kSwitchContext, kHlt
+
+kHlt:
+    hlt
+    hlt
+    ret
