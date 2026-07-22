@@ -5,6 +5,8 @@
 #include "PIT.h"
 #include "AssemblyUtility.h"
 #include "RTC.h"
+#include "Task.h"
+#include "Synchronization.h"
 
 // Define the command table
 SHELLCOMMANDENTRY gs_vstCommandTable[] = {
@@ -21,8 +23,9 @@ SHELLCOMMANDENTRY gs_vstCommandTable[] = {
     {"createtask", "Create Test Task ex)createtask 1(type) 10(count)", kCreateTestTask},
     {"changepriority", "Change Task Priority ex)changepriority 1(ID) 2(priority)", kChangeTaskPriority},
     {"showtask", "Show Task List", kShowTaskList},
-    {"killtask", "Kill Task ex)killtask 1(ID)", kKillTask},
-    {"cpuload", "Show Processor Load", kCPULoad}
+    {"killtask", "End Task ex)killtask 1(ID) or 0xffffffff(All Task)", kKillTask},
+    {"cpuload", "Show Processor Load", kCPULoad},
+    {"testmutex", "Test Mutex Function", kTestMutex}
 };
 
 
@@ -470,9 +473,10 @@ static void kTestTask2(void)
     char vcData[4] = { '-', '\\', '|', '/' };
 
     pstRunningTask = kGetRunningTask();
-    iOffset = CONSOLE_WIDTH * CONSOLE_HEIGHT - 1 -
-        (((pstRunningTask->qwID & 0xFFFFFFFF) * 2) %
-        (CONSOLE_WIDTH * CONSOLE_HEIGHT));
+    // Reserve the last row for task activity indicators.  Shell output uses
+    // only the rows above it, so scrolling cannot move these indicators.
+    iOffset = (CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1)) +
+        (((pstRunningTask->qwID & 0xFFFFFFFF) * 2) % CONSOLE_WIDTH);
 
     while (1)
     {
@@ -563,14 +567,32 @@ static void kKillTask(const char* pcParameter) {
         qwID = kAToI(vcID, 10);
     }
 
-    kPrintf("Kill Task ID [0x%q]\n", qwID);
+    if (qwID != 0xFFFFFFFF) {
+        kPrintf("Kill Task ID [0x%q] ", qwID);
 
-    if (kEndTask(qwID) == TRUE) {
-        kPrintf("Kill Task Success\n");
+        if(kEndTask(qwID) == TRUE) {
+            kPrintf("Kill Task Success\n");
+        } 
+        
+        else {
+            kPrintf("Kill Task Fail\n");
+        }
     } 
-    
+
     else {
-        kPrintf("Kill Task Fail\n");
+        for (int i = 0; i < TASK_MAXCOUNT; i++) {
+            TCB* pstTask = kGetTCBInTCBPool(i);
+            if (pstTask->qwID >> 32 != 0) {
+                kPrintf("Kill Task ID [0x%q] ", pstTask->qwID);
+                if(kEndTask(pstTask->qwID) == TRUE) {
+                    kPrintf("Kill Task Success\n");
+                } 
+                
+                else {
+                    kPrintf("Kill Task Fail\n");
+                }
+            }
+        }
     }
 }
 
@@ -578,4 +600,51 @@ static void kKillTask(const char* pcParameter) {
 // Show CPU Load
 static void kCPULoad(const char* pcParameter) {
     kPrintf("Processor Load: %d%%\n",kGetProcessorLoad());
+}
+
+
+static MUTEX gs_stMutex;
+static volatile QWORD gs_qwAdder;
+
+static void kPrintNumberTask(void) {
+    int i;
+    int j;
+    QWORD qwTickCount;
+
+    qwTickCount = kGetTickCount();
+    while (kGetTickCount() - qwTickCount < 50) {
+        kSchedule();
+    }
+
+    for (i = 0; i < 5; i++) {
+        kLock(&gs_stMutex);
+        kPrintf("Task ID [0x%q] Value [%d]\n", kGetRunningTask()->qwID, gs_qwAdder);
+        gs_qwAdder += 1;
+        kUnlock(&gs_stMutex);
+
+        for (j = 0; j < 30000; j++) {
+            ;
+        }
+    }
+
+    qwTickCount = kGetTickCount();
+    while (kGetTickCount() - qwTickCount < 1000) {
+        kSchedule();
+    }
+
+    kExitTask();
+}
+
+static void kTestMutex(const char* pcParameter) {
+    int i;
+
+    kInitializeMutex(&gs_stMutex);
+    gs_qwAdder = 1;
+
+    for (i = 0; i < 3; i++) {
+        kCreateTask(TASK_FLAGS_LOW, (QWORD)kPrintNumberTask);
+    }
+
+    kPrintf("Wait Util %d Task End...\n", i);
+    kGetCh();
 }

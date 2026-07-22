@@ -38,6 +38,7 @@
 // Console's width, height, and video memory address
 #define CONSOLE_WIDTH 80
 #define CONSOLE_HEIGHT 25
+#define CONSOLE_SHELL_HEIGHT (CONSOLE_HEIGHT - 1)
 #define CONSOLE_VIDEOMEMORYADDRESS 0XB8000
 
 // Video Controller's I/O port addresses
@@ -65,5 +66,4 @@ BYTE kGetCh(void);
 void kPrintStringXY(int iX, int iY, const char* pcString);
 
 #endif /*__CONSOLE_H__*/
-
 

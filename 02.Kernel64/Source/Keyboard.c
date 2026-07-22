@@ -3,6 +3,7 @@
 #include "AssemblyUtility.h"
 #include "Queue.h"
 #include "Utility.h"
+#include "Synchronization.h"
 
 //////////////////////////////////////
 //  Function about Keyboard controller
@@ -569,9 +570,9 @@ BOOL kConvertScanCodeAndPutQueue(BYTE bScanCode)
 
     if (bResult == TRUE)
     {
-        bPreviousInterrupt = kSetInterruptFlag(FALSE);
+        bPreviousInterrupt = kLockForSystemData();
         bResult = kPutQueue(&gs_stKeyQueue, &stData);
-        kSetInterruptFlag(bPreviousInterrupt);
+        kUnlockForSystemData(bPreviousInterrupt);
     }
 
     return bResult;
@@ -588,11 +589,11 @@ BOOL kGetKeyFromKeyQueue(KEYDATA* pstData)
     }
 
     // Disable interrupts
-    bPreviousInterrupt = kSetInterruptFlag(FALSE);
+    bPreviousInterrupt = kLockForSystemData();
 
     bResult = kGetQueue(&gs_stKeyQueue, pstData);
 
-    kSetInterruptFlag(bPreviousInterrupt);
+    kUnlockForSystemData(bPreviousInterrupt);
 
     return bResult;
 }

@@ -53,4 +53,6 @@ static void kShowTaskList(const char* pcParameter);
 static void kKillTask(const char* pcParameter);
 static void kCPULoad(const char* pcParameter);
 
+static void kTestMutex(const char* pcParameter);
+
 #endif /*__CONSOLESHELL_H__*/

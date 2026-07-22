@@ -77,15 +77,15 @@ int kConsolePrintString(const char* pcBuffer) {
         }
 
         // Handle scrolling if the offset exceeds the screen size
-        if (iCurrentOffset >= (CONSOLE_WIDTH * CONSOLE_HEIGHT)) {
+        if (iCurrentOffset >= (CONSOLE_WIDTH * CONSOLE_SHELL_HEIGHT)) {
             kMemCpy(pstScreen, 
                 pstScreen + CONSOLE_WIDTH, 
-                sizeof(CHARACTER) * CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1));
+                sizeof(CHARACTER) * CONSOLE_WIDTH * (CONSOLE_SHELL_HEIGHT - 1));
             
-            kMemSet(pstScreen + CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1), 0, 
+            kMemSet(pstScreen + CONSOLE_WIDTH * (CONSOLE_SHELL_HEIGHT - 1), 0,
                 sizeof(CHARACTER) * CONSOLE_WIDTH);
             
-             iCurrentOffset = (CONSOLE_WIDTH * (CONSOLE_HEIGHT - 1));
+             iCurrentOffset = (CONSOLE_WIDTH * (CONSOLE_SHELL_HEIGHT - 1));
         }
     }
 
