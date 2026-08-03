@@ -1,4 +1,4 @@
-.PHONY: all BootLoader 01.Kernel32 02.Kernel64 clean
+.PHONY: all BootLoader 01.Kernel32 02.Kernel64 run clean
 
 all: Disk.img
 
@@ -52,6 +52,9 @@ Disk.img: ImageMaker 00.BootLoader/BootLoader.bin 01.Kernel32 02.Kernel64
 	@echo
 	@echo "Disk.img creation complete."
 	@echo
+
+run: Disk.img
+	qemu-system-x86_64 -drive file=Disk.img,format=raw,if=floppy -display curses
 
 clean:
 	@echo
