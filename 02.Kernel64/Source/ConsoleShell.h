@@ -55,4 +55,7 @@ static void kCPULoad(const char* pcParameter);
 
 static void kTestMutex(const char* pcParameter);
 
+static void kCreateThreadTask(void);
+static void kTestThread(const char* pcParameterBuffer);
+
 #endif /*__CONSOLESHELL_H__*/
