@@ -4,6 +4,7 @@ SECTION .text
 
 extern kCommonExceptionHandler, kCommonInterruptHandler, kKeyboardHandler
 extern kTimerHandler
+extern kDeviceNotAvailableHandler
 
 global kISRDivideError, kISRDebug, kISRNMI, kISRBreakPoint, kISROverflow
 global kISRBoundRangeExceeded, kISRInvalidOpcode, kISRDeviceNotAvailable
@@ -167,7 +168,7 @@ kISRDeviceNotAvailable:
 
     ;call handler and insert exception num to handler
     mov rdi, 7
-    call kCommonExceptionHandler
+    call kDeviceNotAvailableHandler
 
     KLOADCONTEXT
     iretq

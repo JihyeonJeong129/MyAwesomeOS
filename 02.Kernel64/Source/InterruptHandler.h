@@ -9,4 +9,6 @@ void kKeyboardHandler(int iVectorNumber);
 
 void kTimerHandler(int iVectorNumber);
 
+void kDeviceNotAvailableHandler(int iVectorNumber);
+
 #endif /*__INTERRUPTHANDLER_H__*/

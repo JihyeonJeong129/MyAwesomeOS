@@ -5,6 +5,7 @@
 #include "Utility.h"
 #include "Task.h"
 #include "Descriptor.h"
+#include "AssemblyUtility.h"
 
 void kCommonExceptionHandler(int iVectorNumber, QWORD qwErrorCode) {
     
@@ -110,4 +111,47 @@ void kTimerHandler(int iVectorNumber) {
         kScheduleInInterrupt();
     }
 
+}
+
+void kDeviceNotAvailableHandler(int iVectorNumber) {
+    TCB* pstFPUTask, * pstCurrentTask;
+    QWORD qwLastFPUTaskID;
+
+    // FPU Exception message
+    char vcBuffer[] = "[EXC:  , ]";
+    static int g_iFPUInterruptCount = 0;
+
+    vcBuffer[5] = '0' + iVectorNumber / 10;
+    vcBuffer[6] = '0' + iVectorNumber % 10;
+
+    vcBuffer[8] = '0' + g_iFPUInterruptCount;
+    g_iFPUInterruptCount = (g_iFPUInterruptCount + 1) % 10;
+    kPrintStringXY(0, 0, vcBuffer);
+
+
+    kClearTS();
+
+    qwLastFPUTaskID = kGetLastFPUUsedTaskID();
+    pstCurrentTask = kGetRunningTask();
+
+    if(qwLastFPUTaskID == pstCurrentTask->qwID){
+        return;
+    }
+
+    else if(qwLastFPUTaskID != TASK_INVALIDID){
+        if((pstFPUTask != NULL) && (pstFPUTask->qwID == qwLastFPUTaskID)){
+            kSaveFPUContext(pstFPUTask->vqwFPUContext);
+        }
+    }
+
+    if(pstCurrentTask->bFPUUsed == FALSE){
+        kInitializeFPU();
+        pstCurrentTask->bFPUUsed = TRUE;
+    }
+
+    else{
+        kLoadFPUContext(pstCurrentTask->vqwFPUContext);
+    }
+
+    kSetLastFPUUsedTaskID(pstCurrentTask->qwID);
 }

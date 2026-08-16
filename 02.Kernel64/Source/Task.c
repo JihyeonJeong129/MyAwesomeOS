@@ -117,6 +117,8 @@ TCB* kCreateTask(QWORD qwFlags, void* pvMemoryAddress, QWORD qwMemorySize,
     pvStackAddress = (void*)((QWORD)TASK_STACKPOOLADDRESS + (TASK_STACKSIZE * 
         GETTCBOFFSET(pstTask->qwID)));
 
+    pstTask->bFPUUsed = FALSE;
+    
     kSetupTask(pstTask, qwFlags, pstTask->qwID, qwEntryPointAddress, pvStackAddress, TASK_STACKSIZE);
     kAddTaskToReadyList(pstTask);
     kUnlockForSystemData(bPreviousFlag);
@@ -194,6 +196,8 @@ void kInitializeScheduler(void) {
     gs_stScheduler.iProcessorTime = TASK_PROCESSORTIME;
     gs_stScheduler.qwProcessorLoad = 0;
     gs_stScheduler.qwSpendProcessorTimeInIdleTask = 0;
+
+    gs_stScheduler.qwLastFPUUsedTaskID = TASK_INVALIDID;
 }
 
 // Set the currently running task
@@ -366,6 +370,14 @@ void kSchedule(void) {
             TASK_PROCESSORTIME - gs_stScheduler.iProcessorTime;
     }
 
+    if(gs_stScheduler.qwLastFPUUsedTaskID != pstNextTask->qwID){
+        kSetTS();
+    }
+
+    else{
+        kClearTS();
+    }
+
     // IF set the end flag, insert the task into the wait list
     // and do not add it to the ready list
     if ((pstRunningTask->qwFlags & TASK_FLAGS_ENDTASK) == TASK_FLAGS_ENDTASK) {
@@ -420,6 +432,14 @@ BOOL kScheduleInInterrupt(void) {
     }
 
     kUnlockForSystemData(bPreviousFlag);
+
+    if(gs_stScheduler.qwLastFPUUsedTaskID != pstNextTask->qwID){
+        kSetTS();
+    }
+
+    else{
+        kClearTS();
+    }
 
     kMemCpy(pcContextAddress, &pstNextTask->stContext, sizeof(CONTEXT));
 
@@ -698,4 +718,12 @@ BOOL kIsProcessorTimeExpired(void) {
         return FALSE;
     }
     return TRUE;
+}
+
+QWORD kGetLastFPUUsedTaskID(void){
+    return gs_stScheduler.qwLastFPUUsedTaskID;
+}
+
+void kSetLastFPUUsedTaskID(QWORD qwTaskID){
+    gs_stScheduler.qwLastFPUUsedTaskID = qwTaskID;
 }
